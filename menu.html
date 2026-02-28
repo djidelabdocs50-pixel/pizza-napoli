@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr" id="html-root" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pizza Napoli — Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --red:#ff3b30;--red2:#cc1a10;--red-pale:#fff3f2;
+  --yellow:#ffcc00;--yellow-pale:#fffbe6;
+  --green:#34c759;--green-pale:#f0fdf4;
+  --bg:#f9f7f5;--white:#ffffff;--surface2:#f3f1ee;
+  --border:#e5e5ea;--text:#0d0d0d;--text2:#48484a;--muted:#8e8e93;
+  --shadow:0 2px 16px rgba(0,0,0,0.07);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+  --sans:'DM Sans',sans-serif;--display:'Fraunces',serif;
+  --arabic:'Noto Kufi Arabic',sans-serif;--radius:18px;
+}
+[data-theme="dark"]{
+  --bg:#0d0d0f;--white:#1c1c1e;--surface2:#2c2c2e;
+  --border:#3a3a3c;--text:#f5f5f7;--text2:#ebebf0;--muted:#8e8e93;
+  --shadow:0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.4);
+  --red-pale:rgba(255,59,48,0.12);
+  --yellow-pale:rgba(255,204,0,0.12);
+  --green-pale:rgba(52,199,89,0.12);
+}
+html{background:var(--bg);transition:background 0.3s;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden;transition:background 0.3s,color 0.3s;}
+
+/* TOP BAR (lang + theme) */
+.top-controls{
+  position:fixed;top:16px;right:16px;z-index:300;
+  display:flex;gap:8px;
+}
+.control-pill{
+  display:flex;gap:2px;
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:100px;padding:3px;
+  border:1px solid rgba(255,255,255,0.12);
+}
+[data-theme="dark"] .control-pill{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.1);}
+.ctrl-btn{
+  padding:6px 13px;border-radius:100px;border:none;cursor:pointer;
+  font-size:11px;font-weight:700;letter-spacing:0.04em;
+  transition:all 0.2s;background:transparent;
+  color:rgba(255,255,255,0.6);font-family:var(--sans);
+}
+.ctrl-btn.active{background:var(--white);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,0.2);}
+.theme-btn{
+  width:34px;height:34px;border-radius:100px;border:none;cursor:pointer;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.12);
+  font-size:16px;display:grid;place-items:center;
+  transition:all 0.2s;
+}
+[data-theme="dark"] .theme-btn{background:rgba(255,255,255,0.1);}
+
+/* HERO */
+.hero{position:relative;height:380px;overflow:hidden;background:var(--text);}
+.hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 40%,rgba(255,59,48,0.35) 0%,transparent 55%),
+    radial-gradient(ellipse at 80% 70%,rgba(255,204,0,0.2) 0%,transparent 45%),
+    linear-gradient(160deg,#1a0600 0%,#0d0d0d 100%);
+}
+.hero-pizza{
+  position:absolute;right:-20px;top:40px;font-size:180px;
+  opacity:0.18;transform:rotate(-15deg);filter:blur(2px);pointer-events:none;
+}
+.hero-content{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:0 24px 36px;
+  background:linear-gradient(to top,rgba(13,13,13,0.92) 0%,transparent 100%);
+  z-index:2;
+}
+.hero-eyebrow{
+  font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--yellow);margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.hero-eyebrow::before{content:'';width:20px;height:1px;background:var(--yellow);}
+.hero-title{
+  font-family:var(--display);font-size:52px;font-weight:900;
+  color:white;line-height:0.95;letter-spacing:-0.02em;margin-bottom:14px;
+}
+.hero-title-ar{font-family:var(--arabic);font-size:38px;font-weight:700;color:white;line-height:1.1;margin-bottom:14px;display:none;}
+.hero-meta{display:flex;gap:14px;flex-wrap:wrap;}
+.hero-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);}
+.hero-dot{width:5px;height:5px;border-radius:50%;background:var(--red);}
+.hero-wave{position:absolute;bottom:-1px;left:0;right:0;z-index:3;line-height:0;}
+
+/* CAT NAV */
+.cat-nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(249,247,245,0.96);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  transition:background 0.3s;
+}
+[data-theme="dark"] .cat-nav{background:rgba(13,13,15,0.96);}
+.cat-scroll{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;}
+.cat-scroll::-webkit-scrollbar{display:none;}
+.cat-btn{
+  display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;
+  border:1.5px solid var(--border);background:var(--white);
+  font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.2s;
+}
+.cat-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);box-shadow:0 3px 10px rgba(0,0,0,0.2);}
+
+/* BODY */
+.menu-body{padding:20px 16px 80px;}
+
+/* Info strip */
+.info-strip{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.info-strip::-webkit-scrollbar{display:none;}
+.info-pill{
+  display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:100px;
+  background:var(--white);border:1px solid var(--border);
+  font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0;
+  box-shadow:var(--shadow);
+}
+
+/* Offer */
+.offer{
+  position:relative;overflow:hidden;background:var(--text);
+  border-radius:var(--radius);padding:20px;margin-bottom:28px;
+  box-shadow:var(--shadow-lg);
+}
+.offer::before{content:'';position:absolute;right:-30px;bottom:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,59,48,0.15);}
+.offer-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.offer-label{display:inline-flex;align-items:center;gap:5px;background:var(--red);color:white;font-size:9px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;padding:4px 10px;border-radius:100px;margin-bottom:8px;}
+.offer-title{font-family:var(--display);font-size:20px;font-weight:700;color:white;line-height:1.2;}
+.offer-title-ar{font-family:var(--arabic);font-size:17px;font-weight:700;color:white;line-height:1.3;display:none;}
+.offer-sub{font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;}
+.offer-price-box{background:var(--red);border-radius:14px;padding:10px 16px;text-align:center;flex-shrink:0;position:relative;z-index:1;}
+.offer-price-num{font-family:var(--display);font-size:26px;font-weight:900;color:white;line-height:1;}
+.offer-price-unit{font-size:11px;color:rgba(255,255,255,0.7);}
+
+/* Section */
+.section{margin-bottom:36px;}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.section-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:var(--text);flex-shrink:0;}
+.section-name{font-family:var(--display);font-size:24px;font-weight:700;}
+.section-name-ar{font-family:var(--arabic);font-size:20px;font-weight:700;display:none;}
+.section-ct{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);padding:3px 9px;border-radius:100px;}
+
+/* Item */
+.items{display:flex;flex-direction:column;gap:12px;}
+.item{
+  background:var(--white);border-radius:var(--radius);border:1px solid var(--border);
+  overflow:hidden;box-shadow:var(--shadow);transition:transform 0.15s;
+}
+.item:active{transform:scale(0.985);}
+.item.feat{border:2px solid var(--yellow);}
+.item-row{display:flex;}
+.item-tile{
+  width:96px;flex-shrink:0;display:grid;place-items:center;
+  font-size:48px;position:relative;overflow:hidden;
+}
+.item-tile img{width:96px;height:100%;object-fit:cover;}
+.tile-r{background:linear-gradient(145deg,#fff3f2,#ffe5e3);}
+.tile-y{background:linear-gradient(145deg,#fffbe6,#fff3c4);}
+.tile-g{background:linear-gradient(145deg,#f0fdf4,#dcfce7);}
+.tile-b{background:linear-gradient(145deg,#eff6ff,#dbeafe);}
+.tile-p{background:linear-gradient(145deg,#faf5ff,#ede9fe);}
+.tile-o{background:linear-gradient(145deg,#fff7ed,#ffedd5);}
+[data-theme="dark"] .tile-r{background:rgba(255,59,48,0.1);}
+[data-theme="dark"] .tile-y{background:rgba(255,204,0,0.1);}
+[data-theme="dark"] .tile-g{background:rgba(52,199,89,0.1);}
+[data-theme="dark"] .tile-b{background:rgba(0,122,255,0.1);}
+[data-theme="dark"] .tile-p{background:rgba(175,82,222,0.1);}
+[data-theme="dark"] .tile-o{background:rgba(255,149,0,0.1);}
+
+.item-body{flex:1;padding:14px 14px 12px;min-width:0;}
+.item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.item-name{font-size:14px;font-weight:700;line-height:1.25;}
+.item-name-ar{font-family:var(--arabic);font-size:13px;font-weight:700;line-height:1.4;display:none;}
+.badge{font-size:9px;font-weight:800;letter-spacing:0.06em;padding:3px 8px;border-radius:100px;flex-shrink:0;text-transform:uppercase;white-space:nowrap;}
+.badge-r{background:var(--red-pale);color:var(--red);}
+.badge-y{background:var(--yellow-pale);color:#9a7000;}
+.badge-g{background:var(--green-pale);color:#16a34a;}
+[data-theme="dark"] .badge-y{color:var(--yellow);}
+
+.item-desc{font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:12px;}
+.item-desc-ar{font-family:var(--arabic);font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:12px;display:none;}
+
+.item-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.size-group{display:flex;gap:5px;}
+.size-btn{
+  min-width:34px;height:28px;padding:0 8px;border-radius:8px;
+  border:1.5px solid var(--border);background:var(--surface2);
+  font-size:10px;font-weight:800;color:var(--muted);
+  cursor:pointer;transition:all 0.18s;font-family:var(--sans);
+}
+.size-btn.sel{background:var(--text);color:var(--bg);border-color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+.item-price{font-family:var(--display);font-size:22px;font-weight:900;color:var(--red);white-space:nowrap;transition:all 0.2s;}
+.item-price-unit{font-size:11px;color:var(--muted);font-family:var(--sans);font-weight:500;}
+.unavail-badge{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:100px;}
+
+@keyframes priceFlash{0%{transform:scale(1.15)}100%{transform:scale(1)}}
+.price-flash{animation:priceFlash 0.2s ease;}
+
+/* Footer */
+.bottom-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;
+  background:rgba(249,247,245,0.97);
+  backdrop-filter:blur(12px);border-top:1px solid var(--border);
+  padding:12px 20px 20px;text-align:center;
+  transition:background 0.3s;
+}
+[data-theme="dark"] .bottom-bar{background:rgba(13,13,15,0.97);}
+.powered{font-size:12px;color:var(--muted);font-weight:500;}
+.powered strong{color:var(--red);font-weight:700;}
+
+/* Loading skeleton */
+.skeleton{background:var(--surface2);border-radius:12px;animation:shimmer 1.2s ease infinite;}
+@keyframes shimmer{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* RTL */
+[dir="rtl"] .cat-scroll,[dir="rtl"] .hero-meta,[dir="rtl"] .info-strip{flex-direction:row-reverse;}
+[dir="rtl"] .item-head,[dir="rtl"] .item-footer,[dir="rtl"] .section-head{flex-direction:row-reverse;}
+[dir="rtl"] .hero-eyebrow{flex-direction:row-reverse;}
+[dir="rtl"] .offer-inner{flex-direction:row-reverse;}
+
+/* AR mode */
+body.ar .item-name{display:none;}
+body.ar .item-name-ar{display:block;}
+body.ar .item-desc{display:none;}
+body.ar .item-desc-ar{display:block;}
+body.ar .section-name{display:none;}
+body.ar .section-name-ar{display:block;}
+body.ar .hero-title{display:none;}
+body.ar .hero-title-ar{display:block;}
+body.ar .offer-title{display:none;}
+body.ar .offer-title-ar{display:block;}
+
+/* Animations */
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.section{animation:up 0.3s ease both;}
+.section:nth-child(1){animation-delay:0.05s;}
+.section:nth-child(2){animation-delay:0.1s;}
+.section:nth-child(3){animation-delay:0.15s;}
+.section:nth-child(4){animation-delay:0.2s;}
+.section:nth-child(5){animation-delay:0.25s;}
+.section:nth-child(6){animation-delay:0.3s;}
+</style>
+</head>
+<body>
+
+<!-- CONTROLS -->
+<div class="top-controls">
+  <div class="control-pill">
+    <button class="ctrl-btn active" id="btn-fr" onclick="setLang('fr')">FR</button>
+    <button class="ctrl-btn" id="btn-ar" onclick="setLang('ar')">عر</button>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-pizza">🍕</div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Pizzeria · Oran</div>
+    <div class="hero-title" id="h-name-fr">Pizza Napoli</div>
+    <div class="hero-title-ar" id="h-name-ar">بيتزا نابولي</div>
+    <div class="hero-meta">
+      <div class="hero-pill"><div class="hero-dot"></div><span id="h-rating">⭐ 4.9</span></div>
+      <div class="hero-pill"><div class="hero-dot"></div>⏱ 25–35 min</div>
+      <div class="hero-pill"><div class="hero-dot"></div><span id="h-address">📍 Oran</span></div>
+    </div>
+  </div>
+  <svg class="hero-wave" viewBox="0 0 430 36" fill="none">
+    <path d="M0 36 Q107 0 215 18 Q322 36 430 8 L430 36 Z" fill="var(--bg)"/>
+  </svg>
+</div>
+
+<!-- CAT NAV -->
+<nav class="cat-nav">
+  <div class="cat-scroll" id="cat-scroll"></div>
+</nav>
+
+<!-- MENU BODY -->
+<div class="menu-body" id="menu-body">
+  <!-- Info strip -->
+  <div class="info-strip" id="info-strip">
+    <div class="info-pill skeleton" style="width:100px;height:36px;"></div>
+    <div class="info-pill skeleton" style="width:80px;height:36px;"></div>
+    <div class="info-pill skeleton" style="width:120px;height:36px;"></div>
+  </div>
+  <!-- Loading -->
+  <div style="padding:60px 0;text-align:center;">
+    <div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 14px;"></div>
+    <div style="font-size:14px;color:var(--muted);">Chargement du menu...</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="bottom-bar">
+  <div class="powered">Menu digital par <strong>MenuDZ</strong></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://uzboygitkcrywenpqlbl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_K7mfFLT0zGU6Dsd3AV3FKw_Zh5YbBFD';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CAT_META = {
+  pizzas:    { icon:'🍕', fr:'Pizzas',         ar:'بيتزا',      tile:'tile-r' },
+  burgers:   { icon:'🍔', fr:'Burgers',         ar:'برغر',       tile:'tile-y' },
+  sandwichs: { icon:'🥖', fr:'Sandwichs',       ar:'ساندويشات',  tile:'tile-g' },
+  pates:     { icon:'🍝', fr:'Pâtes',           ar:'معكرونة',    tile:'tile-b' },
+  sides:     { icon:'🍟', fr:'Accompagnements', ar:'المرافقات',  tile:'tile-p' },
+  boissons:  { icon:'🥤', fr:'Boissons',        ar:'مشروبات',    tile:'tile-o' },
+};
+
+let allItems = [];
+let info = {};
+let sectionIds = [];
+let currentLang = 'fr';
+
+// ── LOAD ──
+async function loadAll() {
+  const [itemsRes, infoRes] = await Promise.all([
+    sb.from('menu_items').select('*').eq('available', true).order('category').order('sort_order'),
+    sb.from('restaurant_info').select('*').eq('id', 1).single()
+  ]);
+
+  allItems = itemsRes.data || [];
+  info = infoRes.data || {};
+
+  renderInfo();
+  renderMenu();
+}
+
+function renderInfo() {
+  document.getElementById('h-name-fr').textContent = info.name_fr || 'Pizza Napoli';
+  document.getElementById('h-name-ar').textContent = info.name_ar || 'بيتزا نابولي';
+  document.getElementById('h-rating').textContent = `⭐ ${info.rating || '4.9'}`;
+  document.getElementById('h-address').textContent = `📍 ${info.address_fr || 'Oran'}`;
+  document.title = `${info.name_fr || 'Menu'} — Menu`;
+
+  document.getElementById('info-strip').innerHTML = `
+    <div class="info-pill">📶 ${info.wifi || 'wifi'}</div>
+    <div class="info-pill">🕐 ${info.hours || '11h–23h'}</div>
+    <div class="info-pill">📞 ${info.phone || ''}</div>
+    <div class="info-pill">💳 <span class="fr-t">Cash</span><span class="ar-t" style="display:none">نقداً</span></div>
+  `;
+}
+
+function renderMenu() {
+  // Group by category
+  const grouped = {};
+  allItems.forEach(item => {
+    if (!grouped[item.category]) grouped[item.category] = [];
+    grouped[item.category].push(item);
+  });
+
+  sectionIds = Object.keys(grouped);
+
+  // Build cat nav
+  const catScroll = document.getElementById('cat-scroll');
+  catScroll.innerHTML = sectionIds.map((cat, i) => {
+    const m = CAT_META[cat] || { icon:'🍽️', fr: cat, ar: cat };
+    return `<button class="cat-btn ${i===0?'active':''}" data-cat="${cat}" onclick="goTo('sec-${cat}',this)">
+      <span>${m.icon}</span>
+      <span class="fr-t">${m.fr}</span>
+      <span class="ar-t" style="display:none">${m.ar}</span>
+    </button>`;
+  }).join('');
+
+  // Build offer
+  let offerHtml = '';
+  if (info.offer_active && info.offer_fr) {
+    offerHtml = `
+    <div class="offer">
+      <div class="offer-inner">
+        <div>
+          <div class="offer-label">🔥 <span class="fr-t">Offre du jour</span><span class="ar-t" style="display:none">عرض اليوم</span></div>
+          <div class="offer-title">${info.offer_fr}</div>
+          <div class="offer-title-ar">${info.offer_ar || ''}</div>
+          <div class="offer-sub fr-t">Valable aujourd'hui seulement</div>
+          <div class="offer-sub ar-t" style="display:none">صالح اليوم فقط</div>
+        </div>
+        <div class="offer-price-box">
+          <div class="offer-price-num">${info.offer_price || ''}</div>
+          <div class="offer-price-unit">DZD</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Build sections
+  const sectionsHtml = sectionIds.map(cat => {
+    const items = grouped[cat];
+    const m = CAT_META[cat] || { icon:'🍽️', fr: cat, ar: cat, tile:'tile-r' };
+    const itemsHtml = items.map(item => buildItemCard(item, m)).join('');
+    return `
+    <div class="section" id="sec-${cat}">
+      <div class="section-head">
+        <div class="section-icon">${m.icon}</div>
+        <div>
+          <div class="section-name">${m.fr}</div>
+          <div class="section-name-ar">${m.ar}</div>
+        </div>
+        <div class="section-ct">${items.length}</div>
+      </div>
+      <div class="items">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('menu-body').innerHTML = `
+    <div class="info-strip" id="info-strip"></div>
+    ${offerHtml}
+    ${sectionsHtml}
+  `;
+
+  renderInfo();
+
+  // Apply current lang
+  if (currentLang === 'ar') applyAr();
+  else applyFr();
+
+  // Scroll spy
+  window.addEventListener('scroll', scrollSpy, { passive: true });
+}
+
+function buildItemCard(item, m) {
+  const prices = item.prices || {};
+  const sizeKeys = Object.keys(prices);
+  const firstKey = sizeKeys[0] || '';
+  const firstPrice = prices[firstKey] || 0;
+
+  const sizeBtns = sizeKeys.map((s, i) =>
+    `<button class="size-btn ${i===0?'sel':''}" onclick="selectSize(this,'${s}')">${s}</button>`
+  ).join('');
+
+  const tile = item.photo_url
+    ? `<div class="item-tile"><img src="${item.photo_url}" alt="${item.name_fr}" loading="lazy"></div>`
+    : `<div class="item-tile ${m.tile}">${item.emoji || m.icon}</div>`;
+
+  const badge = item.featured ? `<span class="badge badge-y">⭐ Best</span>` : '';
+
+  const pricesData = JSON.stringify(prices).replace(/"/g, '&quot;');
+
+  return `
+  <div class="item ${item.featured ? 'feat' : ''}" data-prices="${pricesData}">
+    <div class="item-row">
+      ${tile}
+      <div class="item-body">
+        <div class="item-head">
+          <div>
+            <div class="item-name">${item.name_fr}</div>
+            <div class="item-name-ar">${item.name_ar}</div>
+          </div>
+          ${badge}
+        </div>
+        <div class="item-desc">${item.desc_fr || ''}</div>
+        <div class="item-desc-ar">${item.desc_ar || ''}</div>
+        <div class="item-footer">
+          <div class="size-group">${sizeBtns}</div>
+          <div class="item-price">${firstPrice} <span class="item-price-unit">DZD</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── SIZE SELECT ──
+function selectSize(btn, size) {
+  const item = btn.closest('.item');
+  const prices = JSON.parse(item.dataset.prices.replace(/&quot;/g, '"'));
+  const priceEl = item.querySelector('.item-price');
+  btn.closest('.size-group').querySelectorAll('.size-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  priceEl.classList.remove('price-flash');
+  void priceEl.offsetWidth;
+  priceEl.classList.add('price-flash');
+  priceEl.innerHTML = `${prices[size]} <span class="item-price-unit">DZD</span>`;
+}
+
+// ── NAVIGATION ──
+function goTo(id, el) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 108, behavior: 'smooth' });
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function scrollSpy() {
+  let current = 0;
+  sectionIds.forEach((cat, i) => {
+    const el = document.getElementById('sec-' + cat);
+    if (el && el.getBoundingClientRect().top < 155) current = i;
+  });
+  document.querySelectorAll('.cat-btn').forEach((b, i) => b.classList.toggle('active', i === current));
+}
+
+// ── LANGUAGE ──
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+  if (lang === 'ar') applyAr(); else applyFr();
+}
+
+function applyAr() {
+  document.getElementById('html-root').setAttribute('dir', 'rtl');
+  document.getElementById('html-root').setAttribute('lang', 'ar');
+  document.body.classList.add('ar');
+  document.querySelectorAll('.ar-t').forEach(e => e.style.display = 'inline');
+  document.querySelectorAll('.fr-t').forEach(e => e.style.display = 'none');
+}
+
+function applyFr() {
+  document.getElementById('html-root').setAttribute('dir', 'ltr');
+  document.getElementById('html-root').setAttribute('lang', 'fr');
+  document.body.classList.remove('ar');
+  document.querySelectorAll('.ar-t').forEach(e => e.style.display = 'none');
+  document.querySelectorAll('.fr-t').forEach(e => e.style.display = 'inline');
+}
+
+// ── THEME ──
+function toggleTheme() {
+  const html = document.getElementById('html-root');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  // Update wave fill
+  document.querySelector('.hero-wave path').setAttribute('fill', isDark ? '#f9f7f5' : '#0d0d0f');
+}
+
+// ── INIT ──
+document.querySelectorAll('.ar-t').forEach(e => e.style.display = 'none');
+loadAll();
+</script>
+</body>
+</html>

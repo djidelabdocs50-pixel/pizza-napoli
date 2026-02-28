@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MenuDZ Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --red:#ff3b30;--red2:#cc1a10;--red-pale:#fff3f2;
+  --green:#34c759;--green-pale:#f0fdf4;
+  --yellow:#ffcc00;--yellow-pale:#fffbe6;
+  --blue:#007aff;--blue-pale:#eff6ff;
+  --bg:#f5f5f7;--surface:#ffffff;--surface2:#f9f9fb;
+  --border:#e5e5ea;--border2:#d1d1d6;
+  --text:#0d0d0d;--text2:#48484a;--muted:#8e8e93;
+  --shadow:0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.1);
+  --sans:'DM Sans',sans-serif;--display:'Fraunces',serif;
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#0d0d0f;--surface:#1c1c1e;--surface2:#2c2c2e;
+  --border:#3a3a3c;--border2:#48484a;
+  --text:#f5f5f7;--text2:#ebebf0;--muted:#8e8e93;
+  --shadow:0 2px 12px rgba(0,0,0,0.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.4);
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sans);transition:background 0.3s,color 0.3s;}
+
+/* ── LOGIN ── */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  background:var(--bg);
+}
+.login-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px;padding:48px 40px;
+  width:100%;max-width:400px;
+  box-shadow:var(--shadow-lg);
+  text-align:center;
+}
+.login-logo{
+  width:64px;height:64px;background:var(--red);border-radius:18px;
+  display:grid;place-items:center;font-size:28px;margin:0 auto 20px;
+  box-shadow:0 8px 20px rgba(255,59,48,0.3);
+}
+.login-title{font-family:var(--display);font-size:28px;font-weight:900;margin-bottom:6px;}
+.login-sub{font-size:14px;color:var(--muted);margin-bottom:32px;}
+.form-group{margin-bottom:16px;text-align:left;}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.form-input{
+  width:100%;padding:13px 16px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;font-family:var(--sans);font-size:15px;color:var(--text);
+  outline:none;transition:all 0.2s;
+}
+.form-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,59,48,0.1);}
+.btn-login{
+  width:100%;padding:14px;background:var(--red);color:white;
+  border:none;border-radius:12px;font-family:var(--sans);
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:all 0.2s;margin-top:8px;
+  box-shadow:0 4px 14px rgba(255,59,48,0.3);
+}
+.btn-login:hover{background:var(--red2);transform:translateY(-1px);}
+.login-error{font-size:13px;color:var(--red);margin-top:12px;display:none;}
+
+/* ── MAIN APP ── */
+#app{display:none;}
+
+/* Sidebar */
+.layout{display:flex;min-height:100vh;}
+.sidebar{
+  width:260px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;
+  z-index:50;
+  transition:transform 0.3s;
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:12px;
+  padding:24px 20px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-icon{
+  width:40px;height:40px;background:var(--red);border-radius:12px;
+  display:grid;place-items:center;font-size:18px;flex-shrink:0;
+}
+.sidebar-title{font-family:var(--display);font-size:18px;font-weight:900;}
+.sidebar-title span{color:var(--red);}
+
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;}
+.nav-section-label{
+  font-size:10px;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--muted);
+  padding:8px 8px 4px;margin-bottom:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  cursor:pointer;transition:all 0.15s;
+  font-size:14px;font-weight:500;color:var(--text2);
+  margin-bottom:2px;border:none;background:none;
+  width:100%;text-align:left;font-family:var(--sans);
+}
+.nav-item:hover{background:var(--surface2);}
+.nav-item.active{background:var(--red-pale);color:var(--red);font-weight:600;}
+[data-theme="dark"] .nav-item.active{background:rgba(255,59,48,0.15);}
+.nav-icon{font-size:18px;width:24px;text-align:center;}
+.nav-badge{
+  margin-left:auto;background:var(--red);color:white;
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;
+}
+
+.sidebar-bottom{
+  padding:16px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.theme-toggle{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);
+  transition:all 0.2s;flex:1;font-family:var(--sans);
+}
+.theme-toggle:hover{border-color:var(--red);color:var(--red);}
+.btn-logout{
+  padding:8px 12px;border-radius:10px;
+  background:transparent;border:1px solid var(--border);
+  cursor:pointer;font-size:13px;color:var(--muted);
+  transition:all 0.2s;font-family:var(--sans);
+}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+/* Main content */
+.main{margin-left:260px;flex:1;padding:32px;}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:32px;
+}
+.page-title{font-family:var(--display);font-size:32px;font-weight:900;}
+.page-sub{font-size:14px;color:var(--muted);margin-top:2px;}
+
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 18px;border-radius:10px;border:none;
+  font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn-primary{background:var(--red);color:white;box-shadow:0 3px 10px rgba(255,59,48,0.25);}
+.btn-primary:hover{background:var(--red2);transform:translateY(-1px);}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--red);color:var(--red);}
+.btn-danger{background:var(--red-pale);color:var(--red);}
+.btn-danger:hover{background:var(--red);color:white;}
+.btn-success{background:var(--green-pale);color:var(--green);}
+.btn-sm{padding:7px 12px;font-size:12px;}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);
+}
+.stat-icon{font-size:24px;margin-bottom:10px;}
+.stat-num{font-family:var(--display);font-size:28px;font-weight:900;color:var(--text);}
+.stat-label{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500;}
+
+/* Filter bar */
+.filter-bar{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:20px;flex-wrap:wrap;
+}
+.filter-chip{
+  padding:7px 14px;border-radius:100px;
+  border:1.5px solid var(--border);background:var(--surface);
+  font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:all 0.15s;font-family:var(--sans);
+}
+.filter-chip.active{background:var(--red);color:white;border-color:var(--red);}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:100px;padding:7px 16px;
+  margin-left:auto;
+}
+.search-box input{
+  border:none;background:transparent;font-family:var(--sans);
+  font-size:13px;color:var(--text);outline:none;width:180px;
+}
+.search-box input::placeholder{color:var(--muted);}
+
+/* Items table */
+.items-table{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.table-header{
+  display:grid;grid-template-columns:60px 1fr 120px 100px 80px 120px;
+  padding:12px 20px;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--muted);
+  gap:12px;align-items:center;
+}
+.table-row{
+  display:grid;grid-template-columns:60px 1fr 120px 100px 80px 120px;
+  padding:14px 20px;gap:12px;align-items:center;
+  border-bottom:1px solid var(--border);
+  transition:background 0.15s;
+}
+.table-row:last-child{border-bottom:none;}
+.table-row:hover{background:var(--surface2);}
+
+.item-emoji-cell{
+  width:44px;height:44px;border-radius:12px;
+  display:grid;place-items:center;font-size:22px;
+  background:var(--surface2);flex-shrink:0;
+}
+.item-name-cell .name-fr{font-size:14px;font-weight:600;color:var(--text);}
+.item-name-cell .name-ar{font-size:12px;color:var(--muted);margin-top:1px;}
+.cat-chip{
+  display:inline-flex;padding:4px 10px;border-radius:100px;
+  font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;
+}
+.cat-pizzas{background:#fff3f2;color:var(--red);}
+.cat-burgers{background:#fffbe6;color:#9a7000;}
+.cat-sandwichs{background:#f0fdf4;color:#16a34a;}
+.cat-pates{background:#eff6ff;color:#1d4ed8;}
+.cat-sides{background:#faf5ff;color:#7c3aed;}
+.cat-boissons{background:#fff7ed;color:#c2410c;}
+[data-theme="dark"] .cat-pizzas{background:rgba(255,59,48,0.15);color:#ff6b63;}
+[data-theme="dark"] .cat-burgers{background:rgba(255,204,0,0.15);color:#ffd60a;}
+[data-theme="dark"] .cat-sandwichs{background:rgba(52,199,89,0.15);color:#4cd964;}
+[data-theme="dark"] .cat-pates{background:rgba(0,122,255,0.15);color:#409cff;}
+[data-theme="dark"] .cat-sides{background:rgba(175,82,222,0.15);color:#bf5af2;}
+[data-theme="dark"] .cat-boissons{background:rgba(255,149,0,0.15);color:#ff9f0a;}
+
+.price-cell{font-size:13px;font-weight:600;color:var(--text2);}
+.avail-toggle{
+  display:flex;align-items:center;gap:6px;
+  cursor:pointer;
+}
+.toggle{
+  width:38px;height:22px;border-radius:100px;
+  background:var(--border);position:relative;
+  transition:background 0.2s;cursor:pointer;border:none;
+  flex-shrink:0;
+}
+.toggle.on{background:var(--green);}
+.toggle::after{
+  content:'';position:absolute;
+  width:16px;height:16px;border-radius:50%;
+  background:white;top:3px;left:3px;
+  transition:transform 0.2s;
+  box-shadow:0 1px 4px rgba(0,0,0,0.2);
+}
+.toggle.on::after{transform:translateX(16px);}
+.actions-cell{display:flex;gap:6px;}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:200;display:none;align-items:center;justify-content:center;
+  padding:20px;backdrop-filter:blur(4px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border-radius:20px;
+  width:100%;max-width:600px;max-height:90vh;
+  overflow-y:auto;box-shadow:var(--shadow-lg);
+  animation:modalIn 0.2s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 24px 0;margin-bottom:20px;
+}
+.modal-title{font-family:var(--display);font-size:22px;font-weight:900;}
+.modal-close{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  display:grid;place-items:center;cursor:pointer;
+  font-size:16px;color:var(--muted);transition:all 0.15s;
+}
+.modal-close:hover{background:var(--red-pale);color:var(--red);}
+.modal-body{padding:0 24px 24px;}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{margin-bottom:16px;}
+.form-group.full{grid-column:1/-1;}
+.form-input-area{
+  width:100%;padding:13px 16px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;font-family:var(--sans);font-size:14px;color:var(--text);
+  outline:none;transition:all 0.2s;resize:vertical;min-height:80px;
+}
+.form-input-area:focus,.form-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,59,48,0.08);}
+.form-select{
+  width:100%;padding:13px 16px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;font-family:var(--sans);font-size:14px;color:var(--text);
+  outline:none;transition:all 0.2s;cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+
+/* Prices builder */
+.prices-builder{
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;padding:16px;
+}
+.price-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.price-row:last-child{margin-bottom:0;}
+.price-size-input{
+  flex:1;padding:9px 12px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:8px;font-family:var(--sans);font-size:13px;color:var(--text);
+  outline:none;
+}
+.price-size-input:focus{border-color:var(--red);}
+.btn-add-size{
+  padding:8px 12px;border-radius:8px;
+  background:var(--surface2);border:1.5px dashed var(--border);
+  font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;width:100%;font-family:var(--sans);
+  transition:all 0.15s;margin-top:8px;
+}
+.btn-add-size:hover{border-color:var(--red);color:var(--red);}
+.btn-remove-size{
+  width:28px;height:28px;border-radius:7px;
+  background:var(--red-pale);border:none;color:var(--red);
+  cursor:pointer;font-size:14px;display:grid;place-items:center;
+  flex-shrink:0;
+}
+
+/* Photo upload */
+.photo-upload{
+  border:2px dashed var(--border);border-radius:12px;
+  padding:24px;text-align:center;cursor:pointer;
+  transition:all 0.2s;position:relative;
+}
+.photo-upload:hover{border-color:var(--red);background:var(--red-pale);}
+.photo-upload input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.photo-preview{
+  width:80px;height:80px;border-radius:12px;
+  object-fit:cover;margin:0 auto 8px;display:block;
+}
+.photo-icon{font-size:32px;margin-bottom:8px;}
+.photo-text{font-size:13px;color:var(--muted);}
+
+/* Emoji picker */
+.emoji-grid{
+  display:flex;flex-wrap:wrap;gap:6px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;padding:12px;max-height:120px;overflow-y:auto;
+}
+.emoji-opt{
+  width:36px;height:36px;border-radius:8px;
+  display:grid;place-items:center;font-size:20px;
+  cursor:pointer;border:2px solid transparent;transition:all 0.15s;
+}
+.emoji-opt:hover{background:var(--surface);border-color:var(--border);}
+.emoji-opt.sel{border-color:var(--red);background:var(--red-pale);}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--text);color:var(--bg);
+  padding:12px 20px;border-radius:100px;font-size:14px;font-weight:600;
+  z-index:999;transition:transform 0.3s;white-space:nowrap;
+  box-shadow:var(--shadow-lg);
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:#1c3a2a;color:#4cd964;}
+.toast.error{background:#3a1c1c;color:#ff6b63;}
+
+/* Loading */
+.loading-row{
+  padding:48px;text-align:center;color:var(--muted);
+  font-size:14px;
+}
+.spinner{
+  width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--red);border-radius:50%;
+  animation:spin 0.7s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Empty state */
+.empty-state{padding:60px 20px;text-align:center;}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-title{font-family:var(--display);font-size:20px;margin-bottom:6px;}
+.empty-sub{font-size:14px;color:var(--muted);}
+
+/* Settings tab */
+.settings-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:var(--shadow);margin-bottom:20px;
+}
+.settings-title{font-size:16px;font-weight:700;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;}
+
+/* Responsive */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .table-header,.table-row{grid-template-columns:50px 1fr 100px 80px 120px;gap:8px;}
+  .table-header .th-cat,.table-row .td-cat{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🍕</div>
+    <div class="login-title">MenuDZ Admin</div>
+    <div class="login-sub">Connectez-vous pour gérer votre menu</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="admin@restaurant.dz" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" id="login-pwd" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="login()">Se connecter →</button>
+    <div class="login-error" id="login-error">Email ou mot de passe incorrect.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-icon">🍕</div>
+        <div class="sidebar-title">Menu<span>DZ</span></div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Menu</div>
+        <button class="nav-item active" onclick="showTab('items',this)">
+          <span class="nav-icon">🍽️</span> Plats & Articles
+          <span class="nav-badge" id="items-count">0</span>
+        </button>
+        <button class="nav-item" onclick="showTab('settings',this)">
+          <span class="nav-icon">⚙️</span> Paramètres
+        </button>
+        <div class="nav-section-label" style="margin-top:12px;">Liens</div>
+        <button class="nav-item" onclick="window.open('menu.html','_blank')">
+          <span class="nav-icon">👁️</span> Voir le Menu
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <span id="theme-icon">🌙</span> <span id="theme-label">Mode sombre</span>
+        </button>
+        <button class="btn-logout" onclick="logout()">↩</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- ITEMS TAB -->
+      <div id="tab-items">
+        <div class="topbar">
+          <div>
+            <div class="page-title">Mes Articles</div>
+            <div class="page-sub">Gérez tous les plats de votre menu</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAddModal()">
+            ＋ Ajouter un article
+          </button>
+        </div>
+
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card"><div class="stat-icon">🍽️</div><div class="stat-num" id="s-total">0</div><div class="stat-label">Articles total</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num" id="s-avail">0</div><div class="stat-label">Disponibles</div></div>
+          <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-num" id="s-feat">0</div><div class="stat-label">En vedette</div></div>
+          <div class="stat-card"><div class="stat-icon">📂</div><div class="stat-num" id="s-cats">0</div><div class="stat-label">Catégories</div></div>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-chip active" onclick="filterCat('all',this)">Tout</button>
+          <button class="filter-chip" onclick="filterCat('pizzas',this)">🍕 Pizzas</button>
+          <button class="filter-chip" onclick="filterCat('burgers',this)">🍔 Burgers</button>
+          <button class="filter-chip" onclick="filterCat('sandwichs',this)">🥖 Sandwichs</button>
+          <button class="filter-chip" onclick="filterCat('pates',this)">🍝 Pâtes</button>
+          <button class="filter-chip" onclick="filterCat('sides',this)">🍟 Accomp.</button>
+          <button class="filter-chip" onclick="filterCat('boissons',this)">🥤 Boissons</button>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" placeholder="Rechercher..." oninput="searchItems(this.value)" id="search-input">
+          </div>
+        </div>
+
+        <div class="items-table">
+          <div class="table-header">
+            <div></div>
+            <div>Article</div>
+            <div class="th-cat">Catégorie</div>
+            <div>Prix</div>
+            <div>Dispo</div>
+            <div>Actions</div>
+          </div>
+          <div id="items-list">
+            <div class="loading-row"><div class="spinner"></div>Chargement...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div id="tab-settings" style="display:none;">
+        <div class="topbar">
+          <div>
+            <div class="page-title">Paramètres</div>
+            <div class="page-sub">Informations du restaurant</div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Enregistrer</button>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">🏪 Informations générales</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nom (Français)</label>
+              <input class="form-input" id="s-name-fr" placeholder="Pizza Napoli">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nom (Arabe)</label>
+              <input class="form-input" id="s-name-ar" placeholder="بيتزا نابولي" dir="rtl">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <input class="form-input" id="s-phone" placeholder="0550 123 456">
+            </div>
+            <div class="form-group">
+              <label class="form-label">WiFi</label>
+              <input class="form-input" id="s-wifi" placeholder="napoli2024">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Horaires</label>
+              <input class="form-input" id="s-hours" placeholder="11h – 23h">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adresse</label>
+              <input class="form-input" id="s-address" placeholder="Hai Fellaoucene, Oran">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">🔥 Offre du jour</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Offre (Français)</label>
+              <input class="form-input" id="s-offer-fr" placeholder="Pizza + Boisson + Frites">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Offre (Arabe)</label>
+              <input class="form-input" id="s-offer-ar" placeholder="بيتزا + مشروب + بطاطا" dir="rtl">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prix de l'offre (DZD)</label>
+              <input class="form-input" id="s-offer-price" placeholder="1200" type="number">
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;gap:10px;">
+              <label class="form-label">Afficher l'offre</label>
+              <button class="toggle on" id="s-offer-toggle" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Ajouter un article</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Emoji picker -->
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <input type="hidden" id="f-emoji" value="🍕">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nom (Français) *</label>
+          <input class="form-input" id="f-name-fr" placeholder="Margherita Classique">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom (Arabe) *</label>
+          <input class="form-input" id="f-name-ar" placeholder="مارغريتا كلاسيك" dir="rtl">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Description (Français)</label>
+          <textarea class="form-input-area" id="f-desc-fr" placeholder="Tomate fraîche, mozzarella..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Description (Arabe)</label>
+          <textarea class="form-input-area" id="f-desc-ar" placeholder="طماطم طازجة، موزاريلا..." dir="rtl"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie *</label>
+          <select class="form-select" id="f-cat">
+            <option value="pizzas">🍕 Pizzas</option>
+            <option value="burgers">🍔 Burgers</option>
+            <option value="sandwichs">🥖 Sandwichs</option>
+            <option value="pates">🍝 Pâtes</option>
+            <option value="sides">🍟 Accompagnements</option>
+            <option value="boissons">🥤 Boissons</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding-top:28px;">
+          <label class="form-label" style="margin:0;">En vedette ⭐</label>
+          <button class="toggle" id="f-featured" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+
+      <!-- Prices -->
+      <div class="form-group">
+        <label class="form-label">Tailles & Prix (DZD) *</label>
+        <div class="prices-builder" id="prices-builder"></div>
+        <button class="btn-add-size" onclick="addPriceRow()">＋ Ajouter une taille</button>
+      </div>
+
+      <!-- Photo -->
+      <div class="form-group">
+        <label class="form-label">Photo (optionnel)</label>
+        <div class="photo-upload" id="photo-upload-area">
+          <input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(this)">
+          <img id="photo-preview-img" class="photo-preview" style="display:none;">
+          <div id="photo-placeholder">
+            <div class="photo-icon">📸</div>
+            <div class="photo-text">Cliquez pour uploader une photo</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-photo-url">
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button class="btn btn-secondary" onclick="closeModalDirect()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveItem()" id="save-btn">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://uzboygitkcrywenpqlbl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_K7mfFLT0zGU6Dsd3AV3FKw_Zh5YbBFD';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const EMOJIS = ['🍕','🍔','🥖','🍝','🍟','🥤','🍗','🥩','🧀','🌶','🥑','🍄','🥗','🧆','🍋','🍊','🥛','🍫','🍰','🍦','🎂','🍮','💧','🫓','🌽','🐟','🧅','🍜'];
+const CATS = ['pizzas','burgers','sandwichs','pates','sides','boissons'];
+
+let allItems = [];
+let currentFilter = 'all';
+let currentSearch = '';
+let editingId = null;
+
+// ── AUTH ──
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) {
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+document.getElementById('login-pwd').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+async function logout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  }
+});
+
+// ── INIT ──
+async function initApp() {
+  buildEmojiGrid();
+  await loadItems();
+  await loadSettings();
+}
+
+// ── ITEMS ──
+async function loadItems() {
+  document.getElementById('items-list').innerHTML = '<div class="loading-row"><div class="spinner"></div>Chargement...</div>';
+  const { data, error } = await sb.from('menu_items').select('*').order('category').order('sort_order');
+  if (error) { showToast('Erreur de chargement','error'); return; }
+  allItems = data || [];
+  updateStats();
+  renderItems();
+}
+
+function updateStats() {
+  document.getElementById('s-total').textContent = allItems.length;
+  document.getElementById('s-avail').textContent = allItems.filter(i => i.available).length;
+  document.getElementById('s-feat').textContent = allItems.filter(i => i.featured).length;
+  document.getElementById('s-cats').textContent = [...new Set(allItems.map(i => i.category))].length;
+  document.getElementById('items-count').textContent = allItems.length;
+}
+
+function renderItems() {
+  const list = document.getElementById('items-list');
+  let filtered = allItems;
+  if (currentFilter !== 'all') filtered = filtered.filter(i => i.category === currentFilter);
+  if (currentSearch) filtered = filtered.filter(i =>
+    i.name_fr.toLowerCase().includes(currentSearch) ||
+    i.name_ar.includes(currentSearch)
+  );
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Aucun article trouvé</div><div class="empty-sub">Ajoutez votre premier article !</div></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(item => {
+    const priceVals = Object.values(item.prices || {});
+    const priceStr = priceVals.length ? `${Math.min(...priceVals)} – ${Math.max(...priceVals)} DZD` : '—';
+    return `
+      <div class="table-row">
+        <div>
+          <div class="item-emoji-cell">${item.photo_url ? `<img src="${item.photo_url}" style="width:44px;height:44px;border-radius:12px;object-fit:cover;">` : item.emoji || '🍕'}</div>
+        </div>
+        <div class="item-name-cell">
+          <div class="name-fr">${item.name_fr}${item.featured ? ' ⭐' : ''}</div>
+          <div class="name-ar">${item.name_ar}</div>
+        </div>
+        <div class="td-cat"><span class="cat-chip cat-${item.category}">${item.category}</span></div>
+        <div class="price-cell">${priceStr}</div>
+        <div>
+          <button class="toggle ${item.available ? 'on' : ''}" onclick="toggleAvail('${item.id}', ${!item.available}, this)"></button>
+        </div>
+        <div class="actions-cell">
+          <button class="btn btn-secondary btn-sm" onclick="openEditModal('${item.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function filterCat(cat, el) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderItems();
+}
+
+function searchItems(q) {
+  currentSearch = q.toLowerCase();
+  renderItems();
+}
+
+async function toggleAvail(id, val, btn) {
+  btn.classList.toggle('on', val);
+  await sb.from('menu_items').update({ available: val }).eq('id', id);
+  const item = allItems.find(i => i.id === id);
+  if (item) item.available = val;
+  updateStats();
+  showToast(val ? '✅ Article disponible' : '❌ Article indisponible');
+}
+
+async function deleteItem(id) {
+  if (!confirm('Supprimer cet article ?')) return;
+  const { error } = await sb.from('menu_items').delete().eq('id', id);
+  if (error) { showToast('Erreur','error'); return; }
+  allItems = allItems.filter(i => i.id !== id);
+  updateStats();
+  renderItems();
+  showToast('🗑️ Article supprimé','success');
+}
+
+// ── MODAL ──
+function buildEmojiGrid() {
+  document.getElementById('emoji-grid').innerHTML = EMOJIS.map(e =>
+    `<div class="emoji-opt ${e === '🍕' ? 'sel' : ''}" onclick="selectEmoji('${e}',this)">${e}</div>`
+  ).join('');
+}
+
+function selectEmoji(e, el) {
+  document.querySelectorAll('.emoji-opt').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('f-emoji').value = e;
+}
+
+function addPriceRow(size='', price='') {
+  const builder = document.getElementById('prices-builder');
+  const row = document.createElement('div');
+  row.className = 'price-row';
+  row.innerHTML = `
+    <input class="price-size-input" placeholder="Taille (ex: M, L, XL)" value="${size}">
+    <input class="price-size-input" placeholder="Prix DZD" type="number" value="${price}">
+    <button class="btn-remove-size" onclick="this.closest('.price-row').remove()">✕</button>`;
+  builder.appendChild(row);
+}
+
+function getPrices() {
+  const prices = {};
+  document.querySelectorAll('#prices-builder .price-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const size = inputs[0].value.trim();
+    const price = parseInt(inputs[1].value);
+    if (size && price) prices[size] = price;
+  });
+  return prices;
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Ajouter un article';
+  ['f-name-fr','f-name-ar','f-desc-fr','f-desc-ar','f-photo-url'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-cat').value = 'pizzas';
+  document.getElementById('f-featured').classList.remove('on');
+  document.getElementById('prices-builder').innerHTML = '';
+  addPriceRow('M', ''); addPriceRow('L', ''); addPriceRow('XL', '');
+  document.getElementById('photo-preview-img').style.display = 'none';
+  document.getElementById('photo-placeholder').style.display = 'block';
+  selectEmoji('🍕', document.querySelector('.emoji-opt'));
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const item = allItems.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Modifier l\'article';
+  document.getElementById('f-name-fr').value = item.name_fr || '';
+  document.getElementById('f-name-ar').value = item.name_ar || '';
+  document.getElementById('f-desc-fr').value = item.desc_fr || '';
+  document.getElementById('f-desc-ar').value = item.desc_ar || '';
+  document.getElementById('f-cat').value = item.category || 'pizzas';
+  document.getElementById('f-photo-url').value = item.photo_url || '';
+  document.getElementById('f-featured').classList.toggle('on', !!item.featured);
+
+  // Emoji
+  const emojiEl = document.querySelector(`.emoji-opt[onclick*="${item.emoji}"]`);
+  if (emojiEl) selectEmoji(item.emoji, emojiEl);
+  document.getElementById('f-emoji').value = item.emoji || '🍕';
+
+  // Photo preview
+  if (item.photo_url) {
+    document.getElementById('photo-preview-img').src = item.photo_url;
+    document.getElementById('photo-preview-img').style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+  } else {
+    document.getElementById('photo-preview-img').style.display = 'none';
+    document.getElementById('photo-placeholder').style.display = 'block';
+  }
+
+  // Prices
+  document.getElementById('prices-builder').innerHTML = '';
+  Object.entries(item.prices || {}).forEach(([s,p]) => addPriceRow(s, p));
+  if (!Object.keys(item.prices || {}).length) addPriceRow();
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function saveItem() {
+  const saveBtn = document.getElementById('save-btn');
+  const nameFr = document.getElementById('f-name-fr').value.trim();
+  const nameAr = document.getElementById('f-name-ar').value.trim();
+  if (!nameFr || !nameAr) { showToast('Nom requis en FR et AR','error'); return; }
+
+  const prices = getPrices();
+  if (!Object.keys(prices).length) { showToast('Ajoutez au moins un prix','error'); return; }
+
+  saveBtn.textContent = '⏳ Enregistrement...';
+  saveBtn.disabled = true;
+
+  // Upload photo if selected
+  let photoUrl = document.getElementById('f-photo-url').value;
+  const photoFile = document.getElementById('f-photo').files[0];
+  if (photoFile) {
+    const ext = photoFile.name.split('.').pop();
+    const path = `${Date.now()}.${ext}`;
+    const { data: upData, error: upErr } = await sb.storage.from('menu-photos').upload(path, photoFile, { upsert: true });
+    if (!upErr) {
+      const { data: urlData } = sb.storage.from('menu-photos').getPublicUrl(path);
+      photoUrl = urlData.publicUrl;
+    }
+  }
+
+  const payload = {
+    name_fr: nameFr,
+    name_ar: nameAr,
+    desc_fr: document.getElementById('f-desc-fr').value.trim(),
+    desc_ar: document.getElementById('f-desc-ar').value.trim(),
+    category: document.getElementById('f-cat').value,
+    emoji: document.getElementById('f-emoji').value,
+    prices,
+    photo_url: photoUrl || null,
+    featured: document.getElementById('f-featured').classList.contains('on'),
+    updated_at: new Date().toISOString()
+  };
+
+  let error;
+  if (editingId) {
+    ({ error } = await sb.from('menu_items').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await sb.from('menu_items').insert([payload]));
+  }
+
+  saveBtn.textContent = '💾 Enregistrer';
+  saveBtn.disabled = false;
+
+  if (error) { showToast('Erreur: ' + error.message, 'error'); return; }
+
+  closeModalDirect();
+  await loadItems();
+  showToast(editingId ? '✅ Article modifié' : '✅ Article ajouté', 'success');
+}
+
+function previewPhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('photo-preview-img').src = e.target.result;
+    document.getElementById('photo-preview-img').style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('f-photo').value = '';
+}
+
+// ── SETTINGS ──
+async function loadSettings() {
+  const { data } = await sb.from('restaurant_info').select('*').eq('id', 1).single();
+  if (!data) return;
+  document.getElementById('s-name-fr').value = data.name_fr || '';
+  document.getElementById('s-name-ar').value = data.name_ar || '';
+  document.getElementById('s-phone').value = data.phone || '';
+  document.getElementById('s-wifi').value = data.wifi || '';
+  document.getElementById('s-hours').value = data.hours || '';
+  document.getElementById('s-address').value = data.address_fr || '';
+  document.getElementById('s-offer-fr').value = data.offer_fr || '';
+  document.getElementById('s-offer-ar').value = data.offer_ar || '';
+  document.getElementById('s-offer-price').value = data.offer_price || '';
+  if (data.offer_active) document.getElementById('s-offer-toggle').classList.add('on');
+}
+
+async function saveSettings() {
+  const payload = {
+    name_fr: document.getElementById('s-name-fr').value,
+    name_ar: document.getElementById('s-name-ar').value,
+    phone: document.getElementById('s-phone').value,
+    wifi: document.getElementById('s-wifi').value,
+    hours: document.getElementById('s-hours').value,
+    address_fr: document.getElementById('s-address').value,
+    offer_fr: document.getElementById('s-offer-fr').value,
+    offer_ar: document.getElementById('s-offer-ar').value,
+    offer_price: document.getElementById('s-offer-price').value,
+    offer_active: document.getElementById('s-offer-toggle').classList.contains('on'),
+  };
+  const { error } = await sb.from('restaurant_info').upsert({ id: 1, ...payload });
+  if (error) { showToast('Erreur','error'); return; }
+  showToast('✅ Paramètres enregistrés','success');
+}
+
+// ── UI ──
+function showTab(tab, el) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-items').style.display = tab === 'items' ? 'block' : 'none';
+  document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
+  if (tab === 'settings') loadSettings();
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = isDark ? 'Mode sombre' : 'Mode clair';
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
